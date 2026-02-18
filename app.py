@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, render_template_string
+from flask import Flask, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -15,7 +15,7 @@ login_manager = LoginManager(app)
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# ================= DATABASE =================
+# ================= DATABASE MODELS =================
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,10 +42,9 @@ class TestResult(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ================= INIT =================
+# ================= INIT DATABASE (Flask 3 FIX) =================
 
-@app.before_first_request
-def create_tables():
+with app.app_context():
     db.create_all()
     if not User.query.filter_by(username="rajveer").first():
         admin = User(
@@ -84,7 +83,7 @@ def logout():
     logout_user()
     return redirect("/login")
 
-# ================= REGISTER (ADMIN ONLY, MAX 10) =================
+# ================= REGISTER (ADMIN ONLY, MAX 10 USERS) =================
 
 @app.route("/register", methods=["POST"])
 @login_required
@@ -258,3 +257,4 @@ def dashboard():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+        
